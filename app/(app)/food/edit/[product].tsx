@@ -1,12 +1,13 @@
-// app/food/add/index.tsx
+// app/food/edit/[product].tsx
 import { Picker } from '@react-native-picker/picker';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
-export default function AddFoodScreen() {
+export default function EditFoodScreen() {
+  const { product } = useLocalSearchParams();
   const [name, setName] = useState('');
-  const [category, setCategory] = useState('altă categorie');  
+  const [category, setCategory] = useState('altă categorie');
   const [day, setDay] = useState('');
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
@@ -27,7 +28,6 @@ export default function AddFoodScreen() {
     'altă categorie'
   ];
 
-  // Generate month options
   const months = [
     { name: 'January', value: 1 },
     { name: 'February', value: 2 },
@@ -43,18 +43,38 @@ export default function AddFoodScreen() {
     { name: 'December', value: 12 },
   ];
 
-  // Generate year options (current year + 5 years)
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 6 }, (_, i) => currentYear + i);
 
-  // Update max days when month or year changes
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        const response = await fetch(
+          `${process.env.EXPO_PUBLIC_API_URL}api/food-products/${product}`
+        );
+        const data = await response.json();
+        
+        setName(data.name);
+        setCategory(data.category);
+        
+        const expDate = new Date(data.expirationDate);
+        setDay(expDate.getDate().toString());
+        setMonth(expDate.getMonth() + 1);
+        setYear(expDate.getFullYear());
+        
+      } catch (error) {
+        Alert.alert('Error', 'Failed to load product data');
+        router.back();
+      }
+    };
+
+    fetchProduct();
+  }, [product]);
+
   useEffect(() => {
     const daysInMonth = new Date(year, month, 0).getDate();
     setMaxDays(daysInMonth);
-    
-    if (day && parseInt(day) > daysInMonth) {
-      setDay('');
-    }
+    if (day && parseInt(day) > daysInMonth) setDay('');
   }, [day, month, year]);
 
   const validateDate = () => {
@@ -93,28 +113,28 @@ export default function AddFoodScreen() {
       setLoading(true);
       const expirationDate = new Date(year, month - 1, parseInt(day)).toISOString();
 
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}api/food-products`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name,
-          category,
-          expirationDate,
-        }),
-      });
+      const response = await fetch(
+        `${process.env.EXPO_PUBLIC_API_URL}api/food-products/${product}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name,
+            category,
+            expirationDate,
+          }),
+        }
+      );
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
-      Alert.alert('Success', 'Food product added successfully!');
-      
+      Alert.alert('Success', 'Product updated successfully!');
       router.back();
     } catch (error) {
-      console.error('Failed to add food product:', error);
-      Alert.alert('Error', 'Failed to add food product. Please try again.');
+      console.error('Update failed:', error);
+      Alert.alert('Error', 'Failed to update product');
     } finally {
       setLoading(false);
     }
@@ -127,18 +147,16 @@ export default function AddFoodScreen() {
         style={styles.nameInput}
         value={name}
         onChangeText={setName}
-        autoCapitalize='none'
+        autoCapitalize="none"
         placeholder="Enter food name"
       />
 
       <Text style={styles.label}>Category</Text>
-      <View 
-      style={[styles.input]}>
-
+      <View style={styles.input}>
         <Picker
           selectedValue={category}
-          style={[styles.input, { height: 60 }]}
-          onValueChange={(itemValue) => setCategory(itemValue)}
+          style={{ height: 60 }}
+          onValueChange={setCategory}
         >
           {categories.map((cat) => (
             <Picker.Item key={cat} label={cat} value={cat} />
@@ -148,55 +166,39 @@ export default function AddFoodScreen() {
 
       <Text style={styles.label}>Expiration Date</Text>
       <View style={styles.dateContainer}>
-        {/* Day Input */}
         <TextInput
           style={[styles.input, styles.dayInput]}
           keyboardType="numeric"
           value={day}
-          onChangeText={(text) => {
-            if (/^\d*$/.test(text) ) {
-              setDay(text);
-            }
-          }}
+          onChangeText={(text) => /^\d*$/.test(text) && setDay(text)}
           placeholder="Day"
           maxLength={2}
         />
 
-        {/* Month Dropdown */}
-        <View 
-          style={[styles.picker]}
-        >
+        <View style={styles.picker}>
           <Picker
             selectedValue={month}
-            // style={[styles.input, styles.picker]}
-            onValueChange={(itemValue) => setMonth(itemValue)}
+            onValueChange={setMonth}
           >
             {months.map((m) => (
               <Picker.Item key={m.value} label={m.name} value={m.value} />
             ))}
           </Picker>
         </View>
-        
 
-        {/* Year Dropdown */}
-        <View 
-          style={[styles.picker]}
-        >
-
+        <View style={styles.picker}>
           <Picker
             selectedValue={year}
-            
-            onValueChange={(itemValue) => setYear(itemValue)}
+            onValueChange={setYear}
           >
             {years.map((y) => (
               <Picker.Item key={y} label={y.toString()} value={y} />
             ))}
-        </Picker>
+          </Picker>
         </View>
-
       </View>
 
-      {dateError ? <Text style={styles.errorText}>{dateError}</Text> : null}
+      {dateError && <Text style={styles.errorText}>{dateError}</Text>}
 
       <TouchableOpacity
         style={[styles.button, loading && styles.disabledButton]}
@@ -204,13 +206,14 @@ export default function AddFoodScreen() {
         disabled={loading}
       >
         <Text style={styles.buttonText}>
-          {loading ? 'Adding...' : 'Add Food Product'}
+          {loading ? 'Updating...' : 'Update Product'}
         </Text>
       </TouchableOpacity>
     </ScrollView>
   );
 }
 
+// Reuse the same styles from add page
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,

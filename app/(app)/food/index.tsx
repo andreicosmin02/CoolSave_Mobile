@@ -1,14 +1,25 @@
+import { MaterialIcons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, ActivityIndicator, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function FoodScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [foodProducts, setFoodProducts] = useState<IFoodProduct[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     fetchFoodProducts();
   }, []);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    setTimeout(() => {
+      fetchFoodProducts();
+      setRefreshing(false);
+    }, 2000);
+  };
 
   const fetchFoodProducts = async () => {
     try {
@@ -78,23 +89,40 @@ export default function FoodScreen() {
   return (
     <View style={styles.container}>
       <FlatList
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+        />
+      }
         data={foodProducts}
         keyExtractor={(item) => item._id.toString()}
         renderItem={({ item }) => (
-          <View style={styles.itemContainer}>
-            <View style={styles.itemContent}>
-              <Text style={styles.name}>{item.name}</Text>
-              <Text style={styles.category}>{item.category}</Text>
-              <Text style={styles.date}>
-                Expires: {new Date(item.expirationDate).toLocaleDateString()}
-              </Text>
-            </View>
+        <View style={styles.itemContainer}>
+          <View style={styles.itemContent}>
+            <Text style={styles.name}>{item.name}</Text>
+            <Text style={styles.category}>{item.category}</Text>
+            <Text style={styles.date}>
+              Expires: {new Date(item.expirationDate).toLocaleDateString()}
+            </Text>
+          </View>
+          <View style={styles.actionsContainer}>
+            {/* Edit Button */}
+            <TouchableOpacity 
+              style={styles.editButton}
+              onPress={() => router.push(`/food/edit/${item._id}`)}
+            >
+              <MaterialIcons size={20} name="edit" color="#007bff" />
+            </TouchableOpacity>
+            
+            {/* Existing Delete Button */}
             <TouchableOpacity 
               style={styles.deleteButton}
               onPress={() => confirmDelete(item._id, item.name)}
             >
-              <Text style={styles.deleteText}>X</Text>
+              <MaterialIcons size={20} name="delete" color="red" />
             </TouchableOpacity>
+          </View>
           </View>
         )}
         ListEmptyComponent={
@@ -163,13 +191,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#888',
   },
+  actionsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  editButton: {
+    padding: 8,
+  },
+  // Modify existing deleteButton style:
   deleteButton: {
     padding: 8,
-    marginLeft: 16,
-  },
-  deleteText: {
-    color: 'red',
-    fontSize: 18,
-    fontWeight: 'bold',
+    marginLeft: 8, // Reduced from 16 to create spacing between buttons
   },
 });

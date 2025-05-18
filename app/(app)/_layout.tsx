@@ -24,6 +24,9 @@ export default function AppLayout() {
                 <Stack.Screen name='food/add/index' options={{
                     title: 'Add Food Page',
                 }}/>
+                <Stack.Screen name='food/edit/[product]' options={{
+                    title: 'Edit Food Page',
+                }}/>
             </Stack>
         </>  
     );
