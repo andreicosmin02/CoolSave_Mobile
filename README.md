@@ -8,11 +8,11 @@ CoolSave is a mobile app built with Expo that helps you **track food expiration,
 
 **Food Page**
 
-![Food Page](./assets/1748198068041.jpg)
+<img src="./assets/1748198068041.jpg" width="45%">
 
 **Recipe Page**
 
-![Recipe Page](./assets/1748198068285.jpg)
+<img src="./assets/1748198068285.jpg" width="45%">
 
 ## Features
 
