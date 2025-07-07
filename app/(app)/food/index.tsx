@@ -1,7 +1,16 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 export default function FoodScreen() {
   const [loading, setLoading] = useState(true);
@@ -24,11 +33,11 @@ export default function FoodScreen() {
   const fetchFoodProducts = async () => {
     try {
       const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}api/food-products`);
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const data = await response.json();
       setFoodProducts(data);
       setError(null);
@@ -51,7 +60,6 @@ export default function FoodScreen() {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      // Remove item from local state
       setFoodProducts(prev => prev.filter(item => item._id !== id));
     } catch (error) {
       console.error('Failed to delete food product:', error);
@@ -89,42 +97,40 @@ export default function FoodScreen() {
   return (
     <View style={styles.container}>
       <FlatList
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-        />
-      }
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
         data={foodProducts}
         keyExtractor={(item) => item._id.toString()}
-        renderItem={({ item }) => (
-        <View style={styles.itemContainer}>
-          <View style={styles.itemContent}>
-            <Text style={styles.name}>{item.name}</Text>
-            <Text style={styles.category}>{item.category}</Text>
-            <Text style={styles.date}>
-              Expires: {new Date(item.expirationDate).toLocaleDateString()}
-            </Text>
-          </View>
-          <View style={styles.actionsContainer}>
-            {/* Edit Button */}
-            <TouchableOpacity 
-              style={styles.editButton}
-              onPress={() => router.push(`/food/edit/${item._id}`)}
-            >
-              <MaterialIcons size={20} name="edit" color="#007bff" />
-            </TouchableOpacity>
-            
-            {/* Existing Delete Button */}
-            <TouchableOpacity 
-              style={styles.deleteButton}
-              onPress={() => confirmDelete(item._id, item.name)}
-            >
-              <MaterialIcons size={20} name="delete" color="red" />
-            </TouchableOpacity>
-          </View>
-          </View>
-        )}
+        renderItem={({ item }) => {
+          const isExpired = new Date(item.expirationDate) < new Date();
+
+          return (
+            <View style={[styles.itemContainer, isExpired && styles.expiredItem]}>
+              <View style={styles.itemContent}>
+                <Text style={styles.name}>{item.name}</Text>
+                <Text style={styles.category}>{item.category}</Text>
+                <Text style={[styles.date, isExpired && styles.expiredText]}>
+                  Expires: {new Date(item.expirationDate).toLocaleDateString()}
+                </Text>
+              </View>
+              <View style={styles.actionsContainer}>
+                <TouchableOpacity
+                  style={styles.editButton}
+                  onPress={() => router.push(`/food/edit/${item._id}`)}
+                >
+                  <MaterialIcons size={20} name="edit" color="#007bff" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.deleteButton}
+                  onPress={() => confirmDelete(item._id, item.name)}
+                >
+                  <MaterialIcons size={20} name="delete" color="red" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          );
+        }}
         ListEmptyComponent={
           <Text style={styles.emptyText}>No food products found</Text>
         }
@@ -162,6 +168,11 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
+  expiredItem: {
+    backgroundColor: '#ffe6e6', // light red background for expired
+    borderColor: '#ff4d4d',
+    borderWidth: 1,
+  },
   itemContent: {
     flex: 1,
   },
@@ -179,6 +190,9 @@ const styles = StyleSheet.create({
   date: {
     fontSize: 14,
     color: '#888',
+  },
+  expiredText: {
+    color: '#cc0000', // dark red text for expiration date
   },
   errorText: {
     color: 'red',
@@ -198,9 +212,8 @@ const styles = StyleSheet.create({
   editButton: {
     padding: 8,
   },
-  // Modify existing deleteButton style:
   deleteButton: {
     padding: 8,
-    marginLeft: 8, // Reduced from 16 to create spacing between buttons
+    marginLeft: 8,
   },
 });

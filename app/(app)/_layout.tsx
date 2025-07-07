@@ -27,6 +27,9 @@ export default function AppLayout() {
                 <Stack.Screen name='food/edit/[product]' options={{
                     title: 'Edit Food Page',
                 }}/>
+                <Stack.Screen name='recipe/index' options={{
+                    title: 'Recipe Page',
+                }}/>
             </Stack>
         </>  
     );
